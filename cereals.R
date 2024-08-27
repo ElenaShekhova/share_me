@@ -62,28 +62,29 @@ comb_dot_cer <- comb %>%
     #arrow = arrow(length = unit(0.01, 'npc')),
     max.overlaps = Inf)+
   ggtitle(str_wrap(
-    "People in <span style='color:#421952FF;'>Africa</span> eat more cereals,<br> roots, and tubers than in <span style='color:#7A0403FF;'>Europe</span>",
+    "Cereal, root, and tuber consumption is <br>higher in <span style='color:#421952FF;'>Africa</span> than in <span style='color:#7A0403FF;'>Europe</span>",
     width = 30))+
   theme_minimal() +
   theme(text = element_text(size = 24, color = "#181716", family = "ConcourseB"),
-        plot.title = element_markdown(size=40, face = "bold", margin = margin(b = 15)),
-        #plot.subtitle = element_text(size = 24, family = "Concourse"),
+        plot.title.position = "plot",
+        plot.title = element_textbox_simple(size=40, face = "bold", margin = margin(b = 30), halign=0),
         axis.title.y = element_blank(),
         axis.text.y = element_text(margin = margin(l = 30, r = 10)),
-        axis.title.x = element_text(hjust = 0.2),
+        axis.title.x = element_text(hjust = 0.2, margin = margin(b= 20)),
         axis.text.x = element_text(margin = margin(t= -10, b= 30)),
         legend.position = "none",
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         plot.margin = margin(30, 30, 30, 30),
         plot.background = element_rect(fill = "#F1EFE6"),
-        plot.caption = element_text(family = "Concourse", size = 12, hjust = 0,  margin = margin(t = 20)))+
+        plot.caption.position = "plot",
+        plot.caption = element_text(family = "Concourse", size = 12, hjust = 0, margin = margin(t = 20)))+
   scale_x_continuous(labels=function(x) paste0(x,"%"), limits = c(20,90))+
   scale_y_discrete(labels = label_wrap(10))+
   labs(x = "Share of cereals, roots, and tubers in diet",
-       caption = str_wrap("Dietary energy supply (does not account for food waste and home-produced food): Food and Agriculture Organization of the United Nations (2023) with major processing by Our World in Data. Data from 2016. Created by Elena Shekhova @EShekhova", 100),
+       caption = str_wrap("Dietary energy supply (does not account for food waste and home-produced food): Food and Agriculture Organization of the United Nations (2023) with major processing by Our World in Data. Data from 2016. Created by Elena Shekhova @EShekhova", 120),
   )
-
+comb_dot_cer
 #this is to add png and additional annotations
 
 library(png) #these 2 packages are needed to attach photo
