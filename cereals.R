@@ -14,32 +14,24 @@ font_add(family = "ConcourseB", regular = "../Statistics/Extra-projects/Fonts/Co
 font_add(family = "HeliotropeI", regular = "../Statistics/Extra-projects/Fonts/Heliotrope6Italic.ttf")
 showtext_auto()
 
-#upload data for Cancer incidence (age-standardized) from Institute for Health Metrics and Evaluation. GDP per capita from Our World in Data.
-cancer <- read.csv(file = "../Statistics/Extra-projects/Colon_cancer/CANCER_1990_2016_INCIDENCE.CSV", header = TRUE)%>%
-  filter(Age == "Age-standardized")%>%
-  filter(Sex == "Both")%>%
-  filter(Cancer == "Colon and rectum cancer") %>%
-  filter(Year == 2016)
-
-
+#dats is from Our World in Data
 cereals <- read.csv(file = "../Statistics/Extra-projects/Colon_cancer/share-of-energy-from-cereals-roots-and-tubers-vs-gdp-per-capita.csv", header = TRUE) %>%
   rename("Location" = 1) %>%
   rename("share_cereal" = 4) %>%
   rename("GDP" = 5) %>%
   filter(Year == 2016)
 
-
-comb <- inner_join(cancer, cereals, by = "Location")
-comb <- comb %>%
+cereals<- cereals %>%
   mutate(Continent = case_when(
     Continent %in% c("Asia", "Oceania") ~ "Asia and Oceania",
     Continent %in% c("North America", "South America") ~ "Americas",
     TRUE ~ Continent
-  ))
+  )) %>%
+  filter(!is.na(GDP) & Location != "World")%>%
+  filter(!is.na(share_cereal))
 
 #now we will plot
-
-comb_dot_cer <- comb %>%
+comb_dot_cer <- cereals %>%
   mutate(Continent = factor(Continent, levels = c("Africa", "Asia and Oceania", "Americas", "Europe")))%>%
   ggplot(aes(x= share_cereal, y = Continent, color = Continent)) +
   geom_jitter(aes(fill = Continent), size = 6, shape = 21, colour = "white", alpha = 0.8, height = 0.05)+
@@ -54,7 +46,7 @@ comb_dot_cer <- comb %>%
   ) +
   scale_fill_viridis(option = "H", discrete=TRUE) +
   geom_text_repel(
-    data=comb %>% filter((share_cereal < 25 | share_cereal > 74) & Location != "Switzerland"), # Filter data first
+    data=cereals %>% filter((share_cereal < 25 | share_cereal > 74)), # Filter data first
     aes(label = Location), size = 5, color = "black",
     min.segment.length = 0, #if set to Inf then lines are not printed
     box.padding = unit(0.5, "lines"),
@@ -85,9 +77,10 @@ comb_dot_cer <- comb %>%
        caption = str_wrap("Dietary energy supply (does not account for food waste and home-produced food): Food and Agriculture Organization of the United Nations (2023) with major processing by Our World in Data. Data from 2016. Created by Elena Shekhova @EShekhova", 120),
   )
 comb_dot_cer
-#this is to add png and additional annotations
 
-library(png) #these 2 packages are needed to attach photo
+#now let's add png and additional annotations
+
+library(png) #these 2 packages are needed to attach png
 library(grid)
 img <- readPNG("pngegg.png") #this image is free and from https://www.pngegg.com/
 g <- rasterGrob(img, interpolate=TRUE)
