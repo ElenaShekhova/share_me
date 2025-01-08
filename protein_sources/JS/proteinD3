@@ -1,0 +1,218 @@
+//Line chart D3:
+
+d3.csv("protein_time.csv", d3.autoType).then(data => {
+    console.log("protein data", data);
+    drawLineChart(data);
+});
+
+const drawLineChart = (data) => {
+    const margin = { top: 40, right: 170, bottom: 25, left: 40 };
+    const width = 1000;
+    const height = 500;
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    const lastYear = d3.max(data, d => d.year);
+
+    const svg = d3.select("#line-chart")
+        .append("svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
+
+    const innerChart = svg
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const xScale = d3.scaleLinear()
+        .domain([d3.min(data, d => d.year), d3.max(data, d => d.year)])
+        .range([0, innerWidth]);
+
+    const xAxis = d3.axisBottom(xScale)
+        .tickValues([1990, 1995, 2000, 2005, 2010, 2015, 2018])
+        .tickFormat(d => d);
+
+    const maxIntake = d3.max(data, d => d.upperci_95);
+    const yScale = d3.scaleLinear()
+        .domain([0, maxIntake])
+        .range([innerHeight, 0]);
+    innerChart
+        .append("g")
+        .attr("class", "axis-x")
+        .attr("transform", `translate(0, ${innerHeight})`)
+        .call(xAxis);
+
+    d3.selectAll(".axis-x text")
+        .attr("y", "10px")
+        // such styles as font are better to format via CSS file and combine for both axis-y and x texts together
+        .style("font-family", "Roboto, sans-serif")
+        .style("font-size", "14px")
+    // .attr("x", distanceBetween)
+
+    const leftAxis = d3.axisLeft(yScale);
+    innerChart
+        .append("g")
+        .attr("class", "axis-y")
+        .call(leftAxis);
+
+    d3.selectAll(".axis-y text")
+        .attr("x", "-8px")
+        .style("font-family", "Roboto, sans-serif")
+        .style("font-size", "14px")
+    svg
+        .append("text")
+        .text("Daily intake per person, g" )
+        .attr("y", 20)
+
+
+    const sumstat = d3.group(data, d => d.item);
+
+    const color = d3.scaleOrdinal()
+        .domain(Array.from(sumstat.keys()))
+        .range(['#9467BD', '#D8A700', '#881b18', '#377EB8']);
+    innerChart
+        .selectAll("circle")
+        .data(data)
+        .join("circle")
+        .attr("r", 4)
+        .attr("cx", d => xScale(d.year))
+        .attr("cy", d => yScale(d.median))
+        .attr("fill", color);
+
+    const areaGenerator = d3.area()
+        .x(d => xScale(d.year))
+        .y0(d => yScale(d.lowerci_95))
+        .y1(d => yScale(d.upperci_95))
+        .curve(d3.curveCatmullRom)
+
+    innerChart.selectAll(".line")
+        .data(Array.from(sumstat)) // Convert grouped data (Map) to array
+        .enter()
+        .append("path")
+        .attr("d", d => areaGenerator(d[1]))
+        .attr("fill", d => color(d[0]))
+        .attr("fill-opacity", 0.2)
+
+
+    const curveGenerator = d3.line()
+        .x(d => xScale(d.year))
+        .y(d => yScale(d.median))
+        .curve(d3.curveCatmullRom);
+
+    innerChart.selectAll(".line")
+        .data(Array.from(sumstat)) // Convert grouped data (Map) to array
+        .enter()
+        .append("path")
+        .attr("fill", "none")
+        .attr("stroke", d => color(d[0])) // d[0] is the group key (e.g., item)
+        .attr("stroke-width", 2.5)
+        .attr("d", d => curveGenerator(d[1])); // d[1] is the array of data points for the group
+
+    Array.from(sumstat).forEach(([key, values]) => {
+        // Get the last data point for the group
+        const lastPoint = values[values.length - 1];
+
+        innerChart
+            .append("text")
+            .text(key) // Display the median value
+            .attr("x", xScale(lastPoint.year) + 10) // Position slightly to the right of the last point
+            .attr("y", yScale(lastPoint.median)- (key === "Eggs" ? 10 : 0)) // -10 px if it is Eggs, otherwise - 0
+            .attr("dominant-baseline", "middle") // Vertically align the text
+            .attr("fill", color(key)) // Use the corresponding color for the group
+            .style("font-family", "Roboto, sans-serif")
+            .style("font-size", "20px");
+    });
+
+};
+
+Arcs in D3:
+
+
+
+const drawArc = () => {
+
+    const pieChartWidth = 300;
+    const pieChartHeight = 500;
+    const parentSvg = d3.select("#arc")
+        .append("svg")
+        .attr("viewBox", [0, 0, pieChartWidth, pieChartHeight]);
+
+    const pieGenerate = (parentSvg, columnIndex, rowIndex, proportion, pieId, arcColor) => {
+        const cellWidth = pieChartWidth / 2; // Number of columns = 2
+        const cellHeight = pieChartHeight / 2; // Number of rows = 2
+
+        const xPosition = cellWidth * (columnIndex - 1) + cellWidth / 2;
+        const yPosition = cellHeight * (rowIndex - 1) + cellHeight / 2;
+
+        const arcGenerator = d3.arc()
+            .innerRadius(40)
+            .outerRadius(60)
+            .padAngle(0.02)
+            .cornerRadius(2);
+
+        const endAngle = proportion * 2 * Math.PI;
+
+
+        console.log(endAngle);
+        const arcGroup = parentSvg
+            .append("g")
+            .attr("transform", `translate(${xPosition}, ${yPosition})`);
+
+        arcGroup
+            .append("path")
+            .attr("d", () => arcGenerator({ startAngle: 0, endAngle: endAngle }))
+            .attr("fill", arcColor);
+
+            
+        const shift = 0.165 //this is experimental number that influences the start position of the text, change from 0.1x to 0.1x5
+        const offSetAngle = shift * Math.PI
+        arcGroup
+            .append("path")
+            .attr("d", () => arcGenerator({ startAngle: -offSetAngle*2, endAngle: offSetAngle*2 }))//this is to give more space to the text before and after
+            .attr("fill", "rgba(138,54,54,0)")
+            .attr("id", pieId);
+        arcGroup
+            .append("path")
+            // .attr("transform", `translate(${xPosition}, ${yPosition})`)
+            .attr("d", () => {
+                return arcGenerator({
+                    startAngle: endAngle,
+                    endAngle: (2 * Math.PI)
+                });
+            })
+            .attr("fill", "#DCE2E2");
+
+        const circleCenter = [0, 0];
+
+        arcGroup
+            .append("text")
+            .text(`${Math.round(proportion * 100)}g`) // Display the proportion
+            .attr("x", circleCenter[0]) // X-coordinate for the center of the circle
+            .attr("y", circleCenter[1]) // Y-coordinate for the center of the circle
+            .attr("text-anchor", "middle") // Center align text horizontally
+            .attr("dominant-baseline", "middle") // Center align text vertically
+            .attr("fill", "black")
+            .style("font-family", "Roboto, sans-serif")
+            .style("font-size", "20px");
+
+        arcGroup
+            .append("text")
+            // .attr("transform", `translate(${xPosition}, ${yPosition})`)
+            .attr("x", 40)   //Move the text from the start angle of the arc
+            .attr("dy", -10)
+            .append("textPath")
+            .text(pieId)
+            .attr("xlink:href", "#"+pieId) // `#${pieId}`
+            .attr("fill", arcColor) // Use the corresponding color for the group
+            .style("font-family", "Roboto, sans-serif")
+            .style("font-size", "20px");
+    };
+
+// Generate four pie charts in a fixed 2x2 grid
+    pieGenerate(parentSvg, 1, 1, 0.26, "Beef", "#881b18");   // First column, first row
+    pieGenerate(parentSvg, 2, 1, 0.08, "Beans", '#9467BD' );     // Second column, first row
+    pieGenerate(parentSvg, 1, 2, 0.1, "Yogurt", '#377EB8');    // First column, second row
+    pieGenerate(parentSvg, 2, 2, 0.126, "Eggs", '#D8A700');      // Second column, second row
+};
+
+
+
+drawArc();
